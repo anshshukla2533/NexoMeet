@@ -1,13 +1,15 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { Layout } from 'lucide-react';
-import Sidebar from '@/components/Sidebar';
-import HomeTab from '@/components/HomeTab';
-import TakeawayTab from '@/components/TakeawayTab';
+import Sidebar from '../components/Sidebar';
+import HomeTab from '../components/HomeTab';
+import TakeawayTab from '../components/TakeawayTab';
+import LandingPage from '../components/LandingPage';// Import the new layout
 
 type TabType = 'home' | 'upcoming' | 'previous' | 'takeaway' | 'room';
 
 export default function Dashboard() {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false); // Starts unauthenticated
   const [currentTab, setCurrentTab] = useState<TabType>('home');
   const [time, setTime] = useState('');
   const [date, setDate] = useState('');
@@ -24,6 +26,12 @@ export default function Dashboard() {
     return () => clearInterval(interval);
   }, []);
 
+  // If the user hasn't signed in, render the clean UI/UX landing view
+  if (!isAuthenticated) {
+    return <LandingPage onSignIn={() => setIsAuthenticated(true)} />;
+  }
+
+  // Otherwise, load up the modular workspace application dashboard
   return (
     <div className="flex min-h-screen bg-[#0f111a] text-white font-sans">
       <Sidebar currentTab={currentTab} setCurrentTab={setCurrentTab} />
