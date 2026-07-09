@@ -1,12 +1,9 @@
 "use client";
 import React from 'react';
-import { Layout, ArrowRight, Video, FileText, Sparkles, Shield, Zap } from 'lucide-react';
+import { Layout, ArrowRight, Video, FileText, Sparkles, Zap } from 'lucide-react';
+import { SignInButton } from '@clerk/nextjs';
 
-interface LandingPageProps {
-  onSignIn: () => void;
-}
-
-export default function LandingPage({ onSignIn }: LandingPageProps) {
+export default function LandingPage() {
   return (
     <div className="min-h-screen bg-[#0f111a] text-white font-sans overflow-x-hidden selection:bg-blue-500/30">
       
@@ -20,12 +17,12 @@ export default function LandingPage({ onSignIn }: LandingPageProps) {
             <span className="text-xl font-bold tracking-wide">NexoMeet</span>
           </div>
           
-          <button 
-            onClick={onSignIn}
-            className="px-5 py-2 rounded-xl text-sm font-semibold bg-white text-black hover:bg-gray-200 active:scale-95 transition-all shadow-md"
-          >
-            Sign In
-          </button>
+          {/* Native Navbar SignIn Trigger */}
+          <SignInButton mode="modal" forceRedirectUrl="/dashboard">
+            <button className="px-5 py-2 rounded-xl text-sm font-semibold bg-white text-black hover:bg-gray-200 active:scale-95 transition-all shadow-md cursor-pointer">
+              Sign In
+            </button>
+          </SignInButton>
         </div>
       </nav>
 
@@ -51,13 +48,13 @@ export default function LandingPage({ onSignIn }: LandingPageProps) {
         </p>
 
         <div className="mt-10 flex flex-col sm:flex-row gap-4 items-center justify-center w-full">
-          <button 
-            onClick={onSignIn}
-            className="w-full sm:w-auto px-8 py-4 bg-[#1a73e8] hover:bg-blue-600 font-bold rounded-xl flex items-center justify-center gap-3 shadow-lg shadow-blue-500/20 active:scale-[0.98] transition-all group"
-          >
-            <span>Get Started For Free</span>
-            <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-          </button>
+          {/* Native Hero Section Call-To-Action Trigger */}
+          <SignInButton mode="modal" forceRedirectUrl="/dashboard">
+            <button className="w-full sm:w-auto px-8 py-4 bg-[#1a73e8] hover:bg-blue-600 font-bold rounded-xl flex items-center justify-center gap-3 shadow-lg shadow-blue-500/20 active:scale-[0.98] transition-all group cursor-pointer">
+              <span>Get Started For Free</span>
+              <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+            </button>
+          </SignInButton>
         </div>
       </section>
 
@@ -75,7 +72,7 @@ export default function LandingPage({ onSignIn }: LandingPageProps) {
               <div className="text-xs text-gray-500 font-mono tracking-wider">NEXOMEET_DASHBOARD.EXE</div>
               <div className="w-14" />
             </div>
-            {/* Fake layout representation for visual depth */}
+            {/* Structural visualization grid representation */}
             <div className="grid grid-cols-3 gap-4 h-48 animate-pulse">
               <div className="col-span-1 bg-gray-900/50 rounded-xl border border-gray-800/50" />
               <div className="col-span-2 bg-gradient-to-br from-gray-900/80 to-slate-900/40 rounded-xl border border-gray-800/50" />
