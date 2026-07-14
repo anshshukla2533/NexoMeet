@@ -1,131 +1,327 @@
 "use client";
-import React from 'react';
-import { Layout, ArrowRight, Video, FileText, Sparkles, Zap } from 'lucide-react';
-import { SignInButton } from '@clerk/nextjs';
+
+import React from "react";
+import {
+  Play,
+  ArrowRight,
+  Zap,
+  Terminal,
+  Globe,
+  ShieldCheck,
+} from "lucide-react";
+import { SignInButton } from "@clerk/nextjs";
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-[#0f111a] text-white font-sans overflow-x-hidden selection:bg-blue-500/30">
+    <div className="min-h-screen bg-[#FFF5F5] text-zinc-900 font-sans overflow-x-hidden selection:bg-[#4E46E5]/10 relative flex items-center justify-center p-4 sm:p-8">
+
+     
+
       
-      {/* 1. NAVIGATION BAR */}
-      <nav className="border-b border-gray-800/60 bg-[#0f111a]/70 backdrop-blur-md sticky top-0 z-50 px-6 py-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="bg-[#22c55e] p-2 rounded-xl text-white shadow-lg shadow-green-500/20">
-              <Layout size={20} />
-            </div>
-            <span className="text-xl font-bold tracking-wide">NexoMeet</span>
-          </div>
-          
-          {/* Native Navbar SignIn Trigger */}
-          <SignInButton mode="modal" forceRedirectUrl="/dashboard">
-            <button className="px-5 py-2 rounded-xl text-sm font-semibold bg-white text-black hover:bg-gray-200 active:scale-95 transition-all shadow-md cursor-pointer">
-              Sign In
-            </button>
-          </SignInButton>
-        </div>
-      </nav>
+      <div className="absolute top-0 left-0 w-72 h-72 bg-[#FFE885] rounded-full -translate-x-12 -translate-y-12 mix-blend-multiply opacity-80 pointer-events-none" />
 
-      {/* 2. HERO SECTION */}
-      <section className="relative pt-24 pb-20 px-6 text-center max-w-4xl mx-auto flex flex-col items-center">
-        {/* Subtle Ambient Radial Glow */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[250px] bg-blue-500/10 blur-[120px] rounded-full pointer-events-none" />
+      <div className="absolute top-0 left-0 w-56 h-56 bg-[#FFAEBC] rounded-full -translate-x-20 -translate-y-6 mix-blend-multiply opacity-70 pointer-events-none" />
 
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold uppercase tracking-wider mb-6 animate-pulse">
-          <Sparkles size={14} />
-          <span>Next-Gen Video Platform</span>
-        </div>
+      
+      <div className="absolute top-1/4 left-[38%] w-4 h-4 bg-[#FFAEBC] rounded-full pointer-events-none" />
 
-        <h1 className="text-5xl sm:text-6xl md:text-7xl font-black tracking-tight leading-[1.15] bg-clip-text text-transparent bg-gradient-to-b from-white via-neutral-200 to-neutral-500">
-          Meetings Redefined.<br />
-          <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400">
-            Takeaways Automated.
-          </span>
-        </h1>
+      <div className="absolute top-1/3 left-[45%] w-16 h-16 bg-[#FFE885] rounded-full pointer-events-none opacity-90" />
 
-        <p className="mt-6 text-lg sm:text-xl text-gray-400 max-w-2xl font-normal leading-relaxed">
-          Host crystal-clear video calls and walk away with production-ready AI summaries, action milestones, and complete bullet transcripts instantly.
-        </p>
+      <div className="absolute left-[10%] top-1/2 w-5 h-5 bg-[#FFAEBC] rounded-full pointer-events-none" />
 
-        <div className="mt-10 flex flex-col sm:flex-row gap-4 items-center justify-center w-full">
-          {/* Native Hero Section Call-To-Action Trigger */}
-          <SignInButton mode="modal" forceRedirectUrl="/dashboard">
-            <button className="w-full sm:w-auto px-8 py-4 bg-[#1a73e8] hover:bg-blue-600 font-bold rounded-xl flex items-center justify-center gap-3 shadow-lg shadow-blue-500/20 active:scale-[0.98] transition-all group cursor-pointer">
-              <span>Get Started For Free</span>
-              <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-            </button>
-          </SignInButton>
-        </div>
-      </section>
+      <div className="absolute bottom-[15%] left-[46%] w-6 h-6 bg-[#4E46E5] rounded-full pointer-events-none opacity-80" />
 
-      {/* 3. APP PREVIEW MOCKUP */}
-      <section className="px-6 max-w-5xl mx-auto pb-24">
-        <div className="relative rounded-2xl border border-gray-800 bg-[#161925]/40 p-2 shadow-2xl backdrop-blur-sm group hover:border-gray-700/80 transition-all">
-          <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/5 to-transparent rounded-2xl pointer-events-none" />
-          <div className="bg-[#0f111a] rounded-xl border border-gray-800/80 p-6 flex flex-col gap-4">
-            <div className="flex items-center justify-between border-b border-gray-800/80 pb-4">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-red-500/40" />
-                <div className="w-3 h-3 rounded-full bg-yellow-500/40" />
-                <div className="w-3 h-3 rounded-full bg-green-500/40" />
+      <div className="absolute bottom-0 left-[50%] w-32 h-32 bg-[#FFAEBC] rounded-full translate-y-12 pointer-events-none opacity-90" />
+
+      {/* MAIN WHITE CANVAS CONTAINER */}
+      <div className="w-full max-w-6xl bg-white rounded-[40px] shadow-[0_32px_120px_rgba(0,0,0,0.06)] border border-white/60 relative overflow-hidden min-h-[640px] flex flex-col justify-between">
+
+      
+        <div className="absolute right-0 top-0 bottom-0 w-[42%] bg-[#4E46E5] rounded-l-[180px] hidden lg:block pointer-events-none" />
+
+       
+        <nav className="w-full pl-12 pr-6 pt-8 flex items-center justify-between relative z-20">
+
+
+          <div className="flex items-center gap-10">
+
+        
+            <div className="flex items-center gap-2.5 cursor-pointer">
+
+              <div className="flex gap-1 bg-[#4E46E5] p-2 rounded-xl text-white shadow-xs">
+                <div className="w-2 h-2 bg-white rounded-full" />
+
+                <div className="w-2 h-2 bg-[#FFE885] rounded-full" />
               </div>
-              <div className="text-xs text-gray-500 font-mono tracking-wider">NEXOMEET_DASHBOARD.EXE</div>
-              <div className="w-14" />
-            </div>
-            {/* Structural visualization grid representation */}
-            <div className="grid grid-cols-3 gap-4 h-48 animate-pulse">
-              <div className="col-span-1 bg-gray-900/50 rounded-xl border border-gray-800/50" />
-              <div className="col-span-2 bg-gradient-to-br from-gray-900/80 to-slate-900/40 rounded-xl border border-gray-800/50" />
+
+              <span className="text-xl font-bold tracking-tight text-zinc-900">
+                NexoMeet.
+              </span>
+
             </div>
           </div>
-        </div>
-      </section>
 
-      {/* 4. VALUE PROPOSITION FEATURES */}
-      <section className="bg-[#131622]/40 border-t border-gray-800/60 py-24 px-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center max-w-2xl mx-auto mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">Built for rapid-execution teams</h2>
-            <p className="text-gray-400 mt-2">Stop digging through hours of session footage. Get the straight facts.</p>
+      
+          <div className="flex items-center ml-auto lg:pr-8">
+
+            <SignInButton mode="modal" forceRedirectUrl="/dashboard">
+
+              <button
+                className="
+                  min-w-[180px]
+                  px-10
+                  py-3
+                  rounded-full
+
+                  text-sm
+                  font-bold
+
+                  bg-white
+                  text-[#4E46E5]
+
+                  border
+                  border-white/80
+
+                  hover:bg-[#FFF5F5]
+                  hover:-translate-y-0.5
+
+                  active:scale-[0.98]
+
+                  transition-all
+                  duration-300
+
+                  cursor-pointer
+
+                  shadow-[0_10px_30px_rgba(0,0,0,0.15)]
+                "
+              >
+                Get Started
+              </button>
+
+            </SignInButton>
+
+          </div>
+        </nav>
+
+    
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 px-12 py-10 items-center relative z-10 flex-1">
+
+        
+          <div className="lg:col-span-6 flex flex-col items-start text-left max-w-lg">
+
+            <h1 className="text-5xl sm:text-6xl font-extrabold tracking-tight text-zinc-900 leading-[1.1]">
+              Meet Like
+              <span className="text-[#4E46E5]">—</span>
+              <br />
+
+              Never
+              <br />
+
+              Before.
+            </h1>
+
+            <p className="mt-6 text-sm text-zinc-400 leading-relaxed font-medium">
+              Host crystal-clear video streams, collaborate in real time, and
+              map instant automated action logs from your conversations
+              natively.
+            </p>
+
+           
+            <div className="mt-8 flex flex-wrap items-center gap-6">
+
+              <SignInButton mode="modal" forceRedirectUrl="/dashboard">
+
+                <button className="px-7 py-3.5 bg-[#4E46E5] hover:bg-[#433bc9] text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 shadow-md active:scale-[0.98] transition-all cursor-pointer">
+
+                  <span>Start Hosting</span>
+
+                  <ArrowRight size={14} />
+
+                </button>
+
+              </SignInButton>
+
+              <button className="flex items-center gap-2.5 text-xs font-bold text-[#4E46E5] hover:text-[#3d36b8] transition-colors cursor-pointer">
+
+                <div className="w-7 h-7 bg-[#4E46E5]/10 rounded-full flex items-center justify-center">
+
+                  <Play
+                    size={10}
+                    className="fill-[#4E46E5] text-[#4E46E5] translate-x-0.5"
+                  />
+
+                </div>
+
+                <span>See it in action!</span>
+
+              </button>
+
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Feature 1 */}
-            <div className="bg-[#161925] border border-gray-800 p-8 rounded-2xl flex flex-col gap-4 hover:border-blue-500/30 transition-all group">
-              <div className="p-3 bg-blue-500/10 rounded-xl text-blue-400 w-fit group-hover:bg-blue-500 group-hover:text-white transition-all">
-                <Video size={24} />
+        
+          <div className="lg:col-span-6 relative flex justify-center lg:justify-end items-center h-full w-full min-h-[380px]">
+
+            <div className="bg-white border border-zinc-200/80 rounded-2xl p-3 shadow-2xl w-full max-w-[420px] relative z-10">
+
+              <div className="bg-[#fcfdfe] rounded-xl border border-zinc-100 flex flex-col h-[260px] overflow-hidden text-[10px]">
+
+             
+                <div className="flex items-center justify-between border-b border-zinc-100 bg-zinc-50/50 px-3 py-2">
+
+                  <div className="flex items-center gap-1">
+
+                    <div className="w-1.5 h-1.5 rounded-full bg-zinc-200" />
+
+                    <div className="w-1.5 h-1.5 rounded-full bg-zinc-200" />
+
+                    <div className="w-1.5 h-1.5 rounded-full bg-zinc-200" />
+
+                  </div>
+
+                  <div className="px-2 py-0.5 bg-white border border-zinc-200/60 rounded text-[8px] text-zinc-400 font-mono w-40 text-center">
+                    nexomeet.app/workspace/call_delta
+                  </div>
+
+                  <div className="w-4" />
+
+                </div>
+
+                {/* DASHBOARD FLEX LAYOUT */}
+                <div className="flex flex-1 overflow-hidden">
+
+                  {/* MICRO STREAM GRID */}
+                  <div className="flex-1 p-3 flex flex-col gap-2">
+
+                    <div className="grid grid-cols-2 gap-2 flex-1">
+
+                      <div className="bg-zinc-900 rounded-lg relative overflow-hidden shadow-xs border border-zinc-800">
+
+                        <div className="absolute bottom-1.5 left-2 text-white font-medium text-[8px] tracking-wide flex items-center gap-1">
+
+                          <span className="w-1 h-1 bg-[#4E46E5] rounded-full" />
+
+                          LEAD_DEV
+
+                        </div>
+
+                      </div>
+
+                      <div className="bg-zinc-100 rounded-lg border border-zinc-200/60 flex items-center justify-center text-zinc-400 font-medium font-mono text-[8px]">
+                        REMOTE_PEER
+                      </div>
+
+                    </div>
+
+                    {/* TOOLBAR */}
+                    <div className="h-8 bg-white border border-zinc-200/80 rounded-lg shadow-2xs px-2 flex items-center justify-between">
+
+                      <span className="text-zinc-400 font-mono text-[8px]">
+                        00:14:02
+                      </span>
+
+                      <div className="px-2 py-1 bg-red-500 text-white rounded font-medium text-[8px]">
+                        End
+                      </div>
+
+                    </div>
+
+                  </div>
+
+                  {/* RIGHT LIVE SUMMARY DRAWER */}
+                  <div className="w-32 border-l border-zinc-100 bg-white p-2 flex flex-col gap-2">
+
+                    <div className="flex items-center gap-1 pb-1 border-b border-zinc-100 font-bold text-zinc-800 text-[8px]">
+
+                      <Terminal size={9} className="text-[#4E46E5]" />
+
+                      <span>LIVE_LOG</span>
+
+                    </div>
+
+                    <div className="bg-zinc-50 p-1.5 rounded border border-zinc-100">
+
+                      <div className="text-[7px] font-bold text-emerald-600 flex items-center gap-0.5 mb-0.5">
+
+                        <Zap size={7} className="fill-emerald-500" />
+
+                        ACTION
+
+                      </div>
+
+                      <p className="text-zinc-500 leading-tight text-[8px]">
+                        Deploy custom hooks router setup.
+                      </p>
+
+                    </div>
+
+                  </div>
+
+                </div>
               </div>
-              <h3 className="text-xl font-bold">HD Video Conferences</h3>
-              <p className="text-gray-400 leading-relaxed text-sm">
-                Flawless real-time audio and high-definition video feeds with adaptive bitrate streaming mechanics.
-              </p>
             </div>
 
-            {/* Feature 2 */}
-            <div className="bg-[#161925] border border-gray-800 p-8 rounded-2xl flex flex-col gap-4 hover:border-emerald-500/30 transition-all group">
-              <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-400 w-fit group-hover:bg-emerald-500 group-hover:text-white transition-all">
-                <FileText size={24} />
+            {/* FLOATING VIDEO THUMBNAIL */}
+            <div className="absolute -top-6 right-6 bg-white border border-zinc-200 p-2 rounded-xl shadow-xl z-20 flex flex-col gap-1 w-24 transform rotate-6 pointer-events-none hidden sm:flex">
+
+              <div className="h-14 bg-[#4E46E5] rounded-lg flex items-center justify-center text-white">
+
+                <Play size={14} className="fill-white" />
+
               </div>
-              <h3 className="text-xl font-bold">Instant Smart Takeaways</h3>
-              <p className="text-gray-400 leading-relaxed text-sm">
-                Advanced AI parsing engine automatically converts meeting speech paths into structured summaries right away.
-              </p>
+
+              <span className="text-[8px] font-bold text-zinc-400 text-center">
+                Sync_File.mp4
+              </span>
+
             </div>
 
-            {/* Feature 3 */}
-            <div className="bg-[#161925] border border-gray-800 p-8 rounded-2xl flex flex-col gap-4 hover:border-purple-500/30 transition-all group">
-              <div className="p-3 bg-purple-500/10 rounded-xl text-purple-400 w-fit group-hover:bg-purple-500 group-hover:text-white transition-all">
-                <Zap size={24} />
+            {/* FLOATING MESSAGE */}
+            <div className="absolute -bottom-4 left-6 bg-white border border-zinc-200 px-3 py-2 rounded-xl shadow-lg z-20 flex items-center gap-2 max-w-[140px] transform -rotate-3 pointer-events-none hidden sm:flex">
+
+              <div className="w-4 h-4 rounded-full bg-emerald-400 flex-shrink-0" />
+
+              <div className="flex flex-col">
+
+                <span className="text-[8px] font-bold text-zinc-800">
+                  Pipeline Ready
+                </span>
+
+                <span className="text-[6px] text-zinc-400 leading-none">
+                  AI automated logs active
+                </span>
+
               </div>
-              <h3 className="text-xl font-bold">Action-Item Triggers</h3>
-              <p className="text-gray-400 leading-relaxed text-sm">
-                Isolates explicit deadlines, user tasks, and context shifts dynamically as the conversation unfolds.
-              </p>
+
             </div>
+
           </div>
         </div>
-      </section>
 
+        {/* FOOTER */}
+        <footer className="w-full border-t border-zinc-100 px-12 py-5 flex items-center justify-between text-[10px] font-mono text-zinc-400 relative z-20 bg-zinc-50/50 rounded-b-[40px]">
+
+          <div className="flex items-center gap-6">
+
+            <span className="flex items-center gap-1.5">
+              <Globe size={11} />
+              SERVERLESS_EDGE_DISTRIBUTION: TRUE
+            </span>
+
+            <span className="hidden md:inline">|</span>
+
+            <span className="hidden md:flex items-center gap-1.5">
+              <ShieldCheck size={11} />
+              ZERO_TRUST_AUTH_LAYER
+            </span>
+
+          </div>
+
+          <span>© NEXOMEET CORE SYSTEMS</span>
+
+        </footer>
+
+      </div>
     </div>
   );
 }

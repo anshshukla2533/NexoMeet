@@ -1,6 +1,7 @@
-import React from 'react';
+"use client";
 
-import { UserButton, SignOutButton } from '@clerk/nextjs';
+import React from 'react';
+import { useUser, SignOutButton } from '@clerk/nextjs';
 import { Home as HomeIcon, Calendar, History, FileText, User, Layout } from 'lucide-react';
 
 type TabType = 'home' | 'upcoming' | 'previous' | 'takeaway' | 'room';
@@ -11,6 +12,8 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ currentTab, setCurrentTab }: SidebarProps) {
+  const { user, isLoaded } = useUser();
+
   const navItems = [
     { id: 'home', label: 'Home', icon: HomeIcon },
     { id: 'upcoming', label: 'Upcoming', icon: Calendar },
@@ -18,6 +21,15 @@ export default function Sidebar({ currentTab, setCurrentTab }: SidebarProps) {
     { id: 'takeaway', label: 'Takeaway', icon: FileText },
     { id: 'room', label: 'Personal Room', icon: User },
   ] as const;
+
+  // Derive display name and initials from Clerk user data
+  const displayName = isLoaded && user
+    ? user.firstName || user.username || user.emailAddresses?.[0]?.emailAddress?.split('@')[0] || 'User'
+    : 'Loading...';
+
+  const initials = isLoaded && user
+    ? (user.firstName?.[0] || user.username?.[0] || 'U').toUpperCase()
+    : '·';
 
   return (
     <aside className="w-64 bg-[#161925] p-6 flex flex-col justify-between border-r border-gray-800 shrink-0 h-screen sticky top-0">
@@ -52,22 +64,21 @@ export default function Sidebar({ currentTab, setCurrentTab }: SidebarProps) {
       </div>
 
       {/* User Profile Badge */}
-<div className="flex items-center justify-between pt-4 border-t border-gray-800">
-  <div className="flex items-center gap-3 truncate">
-    <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-500 to-emerald-500 flex items-center justify-center font-bold text-white tracking-wider shrink-0">
-      N
-    </div>
-    <span className="font-medium truncate text-gray-200">Ansh</span>
-  </div>
+      <div className="flex items-center justify-between pt-4 border-t border-gray-800">
+        <div className="flex items-center gap-3 truncate">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-500 to-emerald-500 flex items-center justify-center font-bold text-white tracking-wider shrink-0">
+            {initials}
+          </div>
+          <span className="font-medium truncate text-gray-200">{displayName}</span>
+        </div>
 
-  {/* Explicit Visible Sign Out Action Button */}
-  <SignOutButton>
-    <button className="text-xs px-3 py-1.5 rounded-lg border border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white transition-all font-medium cursor-pointer shrink-0">
-      Sign Out
-    </button>
-  </SignOutButton>
-</div>
-   
+        {/* Explicit Visible Sign Out Action Button */}
+        <SignOutButton>
+          <button className="text-xs px-3 py-1.5 rounded-lg border border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white transition-all font-medium cursor-pointer shrink-0">
+            Sign Out
+          </button>
+        </SignOutButton>
+      </div>
     </aside>
   );
 }

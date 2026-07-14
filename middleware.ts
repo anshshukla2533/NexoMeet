@@ -1,9 +1,10 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
-// 1. Explicitly allow the landing page AND Clerk's internal auth/callback links
+// 1. Explicitly allow the landing page, Clerk's internal auth/callback links, and webhooks
 const isPublicRoute = createRouteMatcher([
   '/', 
   '/api/auth(.*)', 
+  '/api/webhooks(.*)',
   '/sign-in(.*)', 
   '/sign-up(.*)'
 ]);

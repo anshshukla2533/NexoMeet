@@ -4,16 +4,28 @@ import { Plus, UserPlus, Calendar, Video } from 'lucide-react';
 interface HomeTabProps {
   time: string;
   date: string;
-  onNavigate: (tab: 'takeaway') => void;
+  nextMeetingTime?: string;
+  onNewMeeting: () => void;
+  onJoinMeeting: () => void;
+  onScheduleMeeting: () => void;
+  onViewTakeaways: () => void;
 }
 
-export default function HomeTab({ time, date, onNavigate }: HomeTabProps) {
+export default function HomeTab({
+  time,
+  date,
+  nextMeetingTime,
+  onNewMeeting,
+  onJoinMeeting,
+  onScheduleMeeting,
+  onViewTakeaways,
+}: HomeTabProps) {
   return (
     <div className="flex flex-col gap-6">
       {/* Clock Banner */}
       <div className="relative w-full h-72 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-zinc-900 p-8 flex flex-col justify-between overflow-hidden shadow-2xl border border-gray-800">
         <div className="z-10 bg-white/10 backdrop-blur-md px-4 py-1.5 rounded-lg text-sm font-medium w-fit border border-white/10">
-          Upcoming Meeting at: 12:30 PM
+          Upcoming Meeting at: {nextMeetingTime ?? '12:30 PM'}
         </div>
         
         <div className="z-10 flex flex-col gap-1">
@@ -26,7 +38,10 @@ export default function HomeTab({ time, date, onNavigate }: HomeTabProps) {
 
       {/* Grid Interface */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-2">
-        <div className="bg-[#ff7a45] p-6 rounded-2xl flex flex-col justify-between h-48 cursor-pointer hover:scale-[1.02] transition-all shadow-lg shadow-orange-900/20">
+        <button
+          onClick={onNewMeeting}
+          className="bg-[#ff7a45] p-6 rounded-2xl flex flex-col justify-between h-48 transition-all shadow-lg shadow-orange-900/20 hover:scale-[1.02]"
+        >
           <div className="bg-white/20 w-12 h-12 rounded-xl flex items-center justify-center text-white">
             <Plus size={24} />
           </div>
@@ -34,9 +49,12 @@ export default function HomeTab({ time, date, onNavigate }: HomeTabProps) {
             <h3 className="text-xl font-bold">New Meeting</h3>
             <p className="text-white/80 text-sm mt-1">Start an instant meeting</p>
           </div>
-        </div>
+        </button>
 
-        <div className="bg-[#1a73e8] p-6 rounded-2xl flex flex-col justify-between h-48 cursor-pointer hover:scale-[1.02] transition-all shadow-lg shadow-blue-900/20">
+        <button
+          onClick={onJoinMeeting}
+          className="bg-[#1a73e8] p-6 rounded-2xl flex flex-col justify-between h-48 transition-all shadow-lg shadow-blue-900/20 hover:scale-[1.02]"
+        >
           <div className="bg-white/20 w-12 h-12 rounded-xl flex items-center justify-center text-white">
             <UserPlus size={24} />
           </div>
@@ -44,9 +62,12 @@ export default function HomeTab({ time, date, onNavigate }: HomeTabProps) {
             <h3 className="text-xl font-bold">Join Meeting</h3>
             <p className="text-white/80 text-sm mt-1">via invitation link</p>
           </div>
-        </div>
+        </button>
 
-        <div className="bg-[#722ed1] p-6 rounded-2xl flex flex-col justify-between h-48 cursor-pointer hover:scale-[1.02] transition-all shadow-lg shadow-purple-900/20">
+        <button
+          onClick={onScheduleMeeting}
+          className="bg-[#722ed1] p-6 rounded-2xl flex flex-col justify-between h-48 transition-all shadow-lg shadow-purple-900/20 hover:scale-[1.02]"
+        >
           <div className="bg-white/20 w-12 h-12 rounded-xl flex items-center justify-center text-white">
             <Calendar size={24} />
           </div>
@@ -54,11 +75,11 @@ export default function HomeTab({ time, date, onNavigate }: HomeTabProps) {
             <h3 className="text-xl font-bold">Schedule Meeting</h3>
             <p className="text-white/80 text-sm mt-1">Plan your meeting</p>
           </div>
-        </div>
+        </button>
 
-        <div 
-          onClick={() => onNavigate('takeaway')}
-          className="bg-[#ffc107] p-6 rounded-2xl flex flex-col justify-between h-48 cursor-pointer hover:scale-[1.02] transition-all shadow-lg shadow-yellow-900/20 text-slate-950"
+        <button
+          onClick={onViewTakeaways}
+          className="bg-[#ffc107] p-6 rounded-2xl flex flex-col justify-between h-48 text-slate-950 transition-all shadow-lg shadow-yellow-900/20 hover:scale-[1.02]"
         >
           <div className="bg-black/10 w-12 h-12 rounded-xl flex items-center justify-center">
             <Video size={24} />
@@ -67,7 +88,7 @@ export default function HomeTab({ time, date, onNavigate }: HomeTabProps) {
             <h3 className="text-xl font-bold">View Takeaways</h3>
             <p className="text-slate-900/80 text-sm mt-1">Meeting Takeaways</p>
           </div>
-        </div>
+        </button>
       </div>
     </div>
   );
