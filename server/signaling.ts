@@ -1,4 +1,5 @@
 import WebSocket, { WebSocketServer } from 'ws';
+import { createServer } from 'http';
 
 type ClientMeta = {
   id: string;
@@ -14,9 +15,19 @@ type SignalMessage = {
   userId?: string;
 };
 
-const PORT = process.env.SIGNALING_PORT ? parseInt(process.env.SIGNALING_PORT) : 3005;
+// Managed hosts (Render/Railway) provide PORT. Keep SIGNALING_PORT for local use.
+const PORT = Number(process.env.PORT || process.env.SIGNALING_PORT || 3005);
 
-const wss = new WebSocketServer({ port: PORT });
+const server = createServer((request, response) => {
+  if (request.url === '/health') {
+    response.writeHead(200, { 'Content-Type': 'application/json' });
+    response.end(JSON.stringify({ status: 'ok' }));
+    return;
+  }
+  response.writeHead(404);
+  response.end();
+});
+const wss = new WebSocketServer({ server });
 
 
 const rooms = new Map<string, Map<string, { ws: WebSocket; meta: ClientMeta }>>();
@@ -109,9 +120,9 @@ wss.on('connection', (ws: WebSocket) => {
   ws.on('error', (err: unknown) => console.error('ws error', err));
 });
 
-console.log(`WebSocket signaling server running on ws://localhost:${PORT}`);
+server.listen(PORT, () => console.log(`WebSocket signaling server running on port ${PORT}`));
 
 process.on('SIGINT', () => {
   console.log('Shutting down signaling server');
-  wss.close(() => process.exit(0));
+  wss.close(() => server.close(() => process.exit(0)));
 });
