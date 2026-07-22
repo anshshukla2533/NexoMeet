@@ -50,8 +50,13 @@ export async function POST(req: Request) {
     }
 
     // Sync straight to Neon PostgreSQL
-    await db.user.create({
-      data: {
+    await db.user.upsert({
+      where: { id },
+      update: {
+        email: primaryEmail,
+        name: first_name && last_name ? `${first_name} ${last_name}` : first_name || last_name || null,
+      },
+      create: {
         id: id,
         email: primaryEmail,
         name: first_name && last_name ? `${first_name} ${last_name}` : first_name || last_name || null,

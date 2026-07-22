@@ -1,47 +1,34 @@
 import React from 'react';
-import { Clock, ArrowRight } from 'lucide-react';
+import { Clock, FileText } from 'lucide-react';
 
-type ScheduleItem = {
+type Takeaway = {
   id: string;
-  title: string;
-  description?: string | null;
-  startTime: string;
-  duration: number;
+  content: string;
+  createdAt: string;
+  room: { slug: string; createdAt: string; endedAt: string | null };
 };
 
-interface TakeawayTabProps {
-  previousSchedules?: ScheduleItem[];
-}
-
-export default function TakeawayTab({ previousSchedules = [] }: TakeawayTabProps) {
+export default function TakeawayTab({ takeaways = [] }: { takeaways?: Takeaway[] }) {
   return (
     <div className="flex flex-col gap-6">
       <div>
         <h2 className="text-3xl font-bold tracking-tight">Meeting Takeaways</h2>
-        <p className="text-gray-400 mt-1">Access AI-generated bullet summaries and key task updates from your previous calls.</p>
+        <p className="text-gray-400 mt-1">Notes saved during your meetings, newest first.</p>
       </div>
-      
-      {previousSchedules.length === 0 ? (
+      {takeaways.length === 0 ? (
         <div className="rounded-3xl border border-dashed border-gray-700 p-10 text-center text-gray-400">
-          No previous meetings found. Complete some meetings to see your takeaways here.
+          No takeaways yet. Use the Notes panel in a meeting to save decisions and action items here.
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {previousSchedules.map((item) => (
-            <div key={item.id} className="bg-[#161925] p-6 rounded-2xl border border-gray-800 flex flex-col justify-between h-44 group hover:border-gray-700 transition-all">
-              <div>
-                <div className="flex items-center gap-2 text-sm font-medium text-gray-400 mb-2">
-                  <Clock size={16} />
-                  <span>{new Date(item.startTime).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
-                </div>
-                <h4 className="text-lg font-bold group-hover:text-[#1a73e8] transition-colors line-clamp-2">{item.title}</h4>
-                {item.description ? <p className="text-sm text-gray-500 mt-2 line-clamp-1">{item.description}</p> : null}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {takeaways.map((item) => (
+            <article key={item.id} className="bg-[#161925] p-6 rounded-2xl border border-gray-800">
+              <div className="flex items-center gap-2 text-sm text-gray-400 mb-3"><Clock size={15} />
+                {new Date(item.createdAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
               </div>
-              <button className="flex items-center gap-2 text-sm font-semibold text-[#1a73e8] w-fit">
-                <span>Open Smart Summary</span>
-                <ArrowRight size={16} />
-              </button>
-            </div>
+              <p className="text-gray-100 whitespace-pre-wrap leading-relaxed">{item.content}</p>
+              <div className="mt-4 flex items-center gap-2 text-xs text-blue-400 font-mono"><FileText size={13} />{item.room.slug}</div>
+            </article>
           ))}
         </div>
       )}

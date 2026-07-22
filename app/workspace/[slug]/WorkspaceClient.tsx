@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@clerk/nextjs';
 import {
   Mic, MicOff, Video, VideoOff, PhoneOff, Copy, Check,
-  Users, Clock, Wifi, WifiOff, Maximize2, Minimize2
+  Users, Clock, Wifi, WifiOff, Maximize2, Minimize2, NotebookPen, Send
 } from 'lucide-react';
 
 type Props = { slug: string };
@@ -20,6 +20,8 @@ type PeerInfo = {
   id: string;
   userId?: string;
 };
+
+type MeetingNote = { id: string; content: string; createdAt: string };
 
 const SIGNALING_URL = process.env.NEXT_PUBLIC_SIGNALING_URL || 'ws://localhost:3005';
 
@@ -40,11 +42,23 @@ export default function WorkspaceClient({ slug }: Props) {
   const [connected, setConnected] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [fullscreen, setFullscreen] = useState(false);
+  const [notes, setNotes] = useState<MeetingNote[]>([]);
+  const [noteDraft, setNoteDraft] = useState('');
+  const [noteError, setNoteError] = useState('');
+  const [savingNote, setSavingNote] = useState(false);
+  const [notesOpen, setNotesOpen] = useState(false);
   const startTimeRef = useRef<number>(Date.now());
 
   useEffect(() => {
     setRoomUrl(typeof window !== 'undefined' ? window.location.href : '');
   }, []);
+
+  useEffect(() => {
+    fetch(`/api/room/${encodeURIComponent(slug)}/notes`)
+      .then((res) => res.ok ? res.json() : [])
+      .then((data) => setNotes(data))
+      .catch(() => setNoteError('Notes are unavailable right now.'));
+  }, [slug]);
 
   // Meeting timer
   useEffect(() => {
@@ -264,6 +278,22 @@ export default function WorkspaceClient({ slug }: Props) {
     setTimeout(() => setCopied(false), 2000);
   }
 
+  async function saveNote() {
+    const content = noteDraft.trim();
+    if (!content) return;
+    setSavingNote(true); setNoteError('');
+    try {
+      const res = await fetch(`/api/room/${encodeURIComponent(slug)}/notes`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content }),
+      });
+      const note = await res.json();
+      if (!res.ok) throw new Error(note.error || 'Could not save note.');
+      setNotes((current) => [...current, note]);
+      setNoteDraft('');
+    } catch (error) { setNoteError(error instanceof Error ? error.message : 'Could not save note.'); }
+    finally { setSavingNote(false); }
+  }
+
   async function leaveRoom() {
     // Send leave signal
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
@@ -304,23 +334,23 @@ export default function WorkspaceClient({ slug }: Props) {
     totalStreams <= 9 ? 'grid-cols-3' : 'grid-cols-4';
 
   return (
-    <div className="min-h-screen bg-[#0a0b10] text-white font-sans flex flex-col">
+    <div className="h-dvh overflow-hidden bg-[#0b0c0f] text-white font-sans flex flex-col">
       {/* Top Bar */}
-      <header className="flex items-center justify-between px-6 py-3 bg-[#111219] border-b border-white/5">
+      <header className="shrink-0 flex items-center justify-between px-4 sm:px-6 py-3 bg-[#202124] border-b border-white/10">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
-            <div className="bg-emerald-500 p-1.5 rounded-lg">
+            <div className="bg-[#1a73e8] p-1.5 rounded-lg">
               <Video size={14} className="text-white" />
             </div>
             <span className="font-bold text-sm tracking-wide">NexoMeet</span>
           </div>
-          <div className="h-5 w-px bg-white/10" />
-          <span className="text-xs text-gray-400 font-mono">{slug}</span>
+          <div className="hidden sm:block h-5 w-px bg-white/10" />
+          <span className="hidden sm:block text-xs text-gray-400 font-mono">{slug}</span>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
           {/* Connection status */}
-          <div className="flex items-center gap-1.5">
+          <div className="hidden md:flex items-center gap-1.5">
             {connected ? (
               <>
                 <Wifi size={13} className="text-emerald-400" />
@@ -335,13 +365,13 @@ export default function WorkspaceClient({ slug }: Props) {
           </div>
 
           {/* Timer */}
-          <div className="flex items-center gap-1.5 bg-white/5 px-3 py-1.5 rounded-lg">
+          <div className="flex items-center gap-1.5 bg-black/20 px-3 py-1.5 rounded-lg">
             <Clock size={13} className="text-gray-400" />
             <span className="text-xs font-mono text-gray-300">{formatTime(elapsed)}</span>
           </div>
 
           {/* Participant count */}
-          <div className="flex items-center gap-1.5 bg-white/5 px-3 py-1.5 rounded-lg">
+          <div className="hidden sm:flex items-center gap-1.5 bg-black/20 px-3 py-1.5 rounded-lg">
             <Users size={13} className="text-gray-400" />
             <span className="text-xs text-gray-300">{participantCount}</span>
           </div>
@@ -349,7 +379,7 @@ export default function WorkspaceClient({ slug }: Props) {
           {/* Copy invite link */}
           <button
             onClick={copyRoomLink}
-            className="flex items-center gap-1.5 bg-blue-600/15 hover:bg-blue-600/25 border border-blue-500/20 text-blue-400 px-3 py-1.5 rounded-lg transition-all text-xs font-medium cursor-pointer"
+            className="flex items-center gap-1.5 bg-[#1a73e8] hover:bg-[#287ae6] text-white px-3 py-1.5 rounded-lg transition-all text-xs font-medium cursor-pointer"
           >
             {copied ? <Check size={13} /> : <Copy size={13} />}
             <span>{copied ? 'Copied!' : 'Invite'}</span>
@@ -358,7 +388,7 @@ export default function WorkspaceClient({ slug }: Props) {
           {/* Fullscreen */}
           <button
             onClick={toggleFullscreen}
-            className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-all cursor-pointer"
+            className="hidden sm:block p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-all cursor-pointer"
           >
             {fullscreen ? <Minimize2 size={15} className="text-gray-400" /> : <Maximize2 size={15} className="text-gray-400" />}
           </button>
@@ -366,13 +396,13 @@ export default function WorkspaceClient({ slug }: Props) {
       </header>
 
       {/* Video Grid */}
-      <main className="flex-1 p-4 flex items-center justify-center overflow-hidden">
-        <div className={`grid ${gridCols} gap-3 w-full max-w-7xl h-full max-h-[calc(100vh-140px)]`}>
+      <main className="min-h-0 flex-1 p-3 sm:p-6 flex gap-4 overflow-hidden justify-center items-center">
+        <div className={`grid ${gridCols} gap-3 h-full w-full items-center justify-items-center ${notesOpen ? 'flex-1' : 'max-w-6xl'}`}>
           {/* Local Video */}
-          <div className="relative bg-[#16171f] rounded-2xl overflow-hidden border border-white/5 group min-h-[240px]">
+          <div className={`relative aspect-video w-full bg-[#202124] rounded-2xl overflow-hidden border border-white/10 shadow-2xl group min-h-[180px] ${remoteStreams.length === 0 ? 'max-w-[calc((100dvh-10rem)*16/9)]' : ''}`}>
             <video
               ref={localVideoRef}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain"
               autoPlay
               playsInline
               muted
@@ -385,7 +415,7 @@ export default function WorkspaceClient({ slug }: Props) {
               </div>
             )}
             <div className="absolute bottom-3 left-3 flex items-center gap-2">
-              <span className="bg-black/60 backdrop-blur-sm text-white text-xs font-medium px-2.5 py-1 rounded-lg">
+              <span className="bg-[#202124]/90 backdrop-blur-sm text-white text-xs font-medium px-3 py-1.5 rounded-md">
                 You
               </span>
               {!micOn && (
@@ -394,6 +424,12 @@ export default function WorkspaceClient({ slug }: Props) {
                 </span>
               )}
             </div>
+            {remoteStreams.length === 0 && (
+              <div className="absolute top-3 right-3 flex items-center gap-2 rounded-lg bg-[#202124]/90 px-3 py-2 text-xs text-gray-200 backdrop-blur-sm">
+                <Users size={14} className="text-gray-400" />
+                Waiting for others
+              </div>
+            )}
           </div>
 
           {/* Remote Streams */}
@@ -401,34 +437,29 @@ export default function WorkspaceClient({ slug }: Props) {
             <RemoteVideo key={r.id} stream={r.stream} id={r.id} />
           ))}
 
-          {/* Waiting state — show when alone */}
-          {remoteStreams.length === 0 && (
-            <div className="relative bg-[#16171f] rounded-2xl overflow-hidden border border-dashed border-white/10 flex flex-col items-center justify-center gap-3 min-h-[240px]">
-              <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center">
-                <Users size={24} className="text-gray-500" />
-              </div>
-              <p className="text-gray-500 text-sm font-medium">Waiting for others to join...</p>
-              <button
-                onClick={copyRoomLink}
-                className="text-xs text-blue-400 hover:text-blue-300 transition-colors cursor-pointer flex items-center gap-1"
-              >
-                <Copy size={11} />
-                <span>Share invite link</span>
-              </button>
-            </div>
-          )}
         </div>
+        {notesOpen && <aside className="hidden xl:flex w-80 shrink-0 h-full rounded-2xl bg-[#202124] border border-white/10 flex-col overflow-hidden shadow-xl">
+          <div className="p-4 border-b border-white/5 flex items-center gap-2"><NotebookPen size={16} className="text-blue-400" /><h2 className="font-semibold text-sm">Meeting notes</h2></div>
+          <div className="p-4 space-y-3 border-b border-white/5">
+            <textarea value={noteDraft} onChange={(e) => setNoteDraft(e.target.value)} placeholder="Capture a decision, action item, or takeaway…" rows={4} className="w-full resize-none rounded-xl bg-black/20 border border-white/10 p-3 text-sm outline-none focus:border-blue-500" />
+            {noteError && <p className="text-xs text-red-400">{noteError}</p>}
+            <button onClick={saveNote} disabled={savingNote || !noteDraft.trim()} className="w-full rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-40 px-3 py-2 text-sm font-semibold flex items-center justify-center gap-2"><Send size={14} />{savingNote ? 'Saving…' : 'Save takeaway'}</button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            {notes.length === 0 ? <p className="text-sm text-gray-500">Saved notes will appear in Takeaways after the meeting.</p> : notes.map((note) => <div key={note.id} className="rounded-xl bg-white/5 p-3 text-sm text-gray-300 whitespace-pre-wrap"><p>{note.content}</p><p className="mt-2 text-xs text-gray-500">{new Date(note.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p></div>)}
+          </div>
+        </aside>}
       </main>
 
       {/* Bottom Toolbar */}
-      <footer className="flex items-center justify-center gap-3 py-4 bg-[#111219] border-t border-white/5">
+      <footer className="shrink-0 flex items-center justify-center gap-3 py-3 sm:py-4 bg-[#202124] border-t border-white/10">
         {/* Mic Toggle */}
         <button
           onClick={toggleMic}
           className={`p-4 rounded-2xl transition-all cursor-pointer ${
             micOn
-              ? 'bg-white/10 hover:bg-white/15 text-white'
-              : 'bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30'
+              ? 'bg-[#3c4043] hover:bg-[#4a4f53] text-white'
+              : 'bg-[#ea4335] hover:bg-[#f06256] text-white'
           }`}
           title={micOn ? 'Mute microphone' : 'Unmute microphone'}
         >
@@ -440,18 +471,26 @@ export default function WorkspaceClient({ slug }: Props) {
           onClick={toggleCam}
           className={`p-4 rounded-2xl transition-all cursor-pointer ${
             camOn
-              ? 'bg-white/10 hover:bg-white/15 text-white'
-              : 'bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30'
+              ? 'bg-[#3c4043] hover:bg-[#4a4f53] text-white'
+              : 'bg-[#ea4335] hover:bg-[#f06256] text-white'
           }`}
           title={camOn ? 'Turn off camera' : 'Turn on camera'}
         >
           {camOn ? <Video size={20} /> : <VideoOff size={20} />}
         </button>
 
+        <button
+          onClick={() => setNotesOpen((open) => !open)}
+          className={`p-4 rounded-2xl transition-all cursor-pointer ${notesOpen ? 'bg-[#1a73e8] text-white' : 'bg-[#3c4043] hover:bg-[#4a4f53] text-white'}`}
+          title={notesOpen ? 'Close meeting notes' : 'Open meeting notes'}
+        >
+          <NotebookPen size={20} />
+        </button>
+
         {/* Leave Room */}
         <button
           onClick={leaveRoom}
-          className="px-8 py-4 rounded-2xl bg-red-600 hover:bg-red-500 text-white font-semibold transition-all cursor-pointer flex items-center gap-2 shadow-lg shadow-red-900/30"
+          className="px-7 py-4 rounded-2xl bg-[#ea4335] hover:bg-[#f06256] text-white font-semibold transition-all cursor-pointer flex items-center gap-2"
           title="Leave meeting"
         >
           <PhoneOff size={18} />
@@ -471,10 +510,10 @@ function RemoteVideo({ stream, id }: { stream: MediaStream; id: string }) {
     }
   }, [stream]);
   return (
-    <div className="relative bg-[#16171f] rounded-2xl overflow-hidden border border-white/5 group min-h-[240px]">
-      <video ref={ref} className="w-full h-full object-cover" autoPlay playsInline />
+    <div className="relative aspect-video max-h-full bg-[#202124] rounded-2xl overflow-hidden border border-white/10 shadow-xl group min-h-[180px]">
+      <video ref={ref} className="w-full h-full object-contain" autoPlay playsInline />
       <div className="absolute bottom-3 left-3">
-        <span className="bg-black/60 backdrop-blur-sm text-white text-xs font-medium px-2.5 py-1 rounded-lg">
+        <span className="bg-[#202124]/90 backdrop-blur-sm text-white text-xs font-medium px-3 py-1.5 rounded-md">
           {id.startsWith('c_') ? `Guest ${id.slice(2, 6)}` : id}
         </span>
       </div>

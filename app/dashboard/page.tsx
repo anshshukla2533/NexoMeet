@@ -5,7 +5,7 @@ import Sidebar from '../../components/Sidebar';
 import HomeTab from '../../components/HomeTab';
 import TakeawayTab from '../../components/TakeawayTab';
 import { useRouter } from 'next/navigation';
-import { Clock, Calendar, ExternalLink, RotateCcw } from 'lucide-react';
+import { Clock, Calendar, ExternalLink, RotateCcw, Copy } from 'lucide-react';
 
 type TabType = 'home' | 'upcoming' | 'previous' | 'takeaway' | 'room';
 
@@ -15,7 +15,10 @@ type ScheduleItem = {
   description?: string | null;
   startTime: string;
   duration: number;
+  roomSlug?: string | null;
 };
+
+type Takeaway = { id: string; content: string; createdAt: string; room: { slug: string; createdAt: string; endedAt: string | null } };
 
 type RoomItem = {
   id: string;
@@ -35,6 +38,7 @@ export default function DashboardPage() {
   const [date, setDate] = useState('');
   const [schedules, setSchedules] = useState<ScheduleItem[]>([]);
   const [rooms, setRooms] = useState<RoomItem[]>([]);
+  const [takeaways, setTakeaways] = useState<Takeaway[]>([]);
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [joinOpen, setJoinOpen] = useState(false);
   const [joinSlug, setJoinSlug] = useState('');
@@ -48,14 +52,19 @@ export default function DashboardPage() {
     duration: 30,
   });
 
-  const now = useMemo(() => new Date(), [currentTab, schedules]);
+  const completedScheduleSlugs = useMemo(
+    () => new Set(rooms.filter((room) => room.endedAt).map((room) => room.slug)),
+    [rooms]
+  );
+  // A planned meeting remains upcoming until it is actually completed. A
+  // clock-only filter incorrectly hid meetings as soon as their start time passed.
   const upcomingSchedules = useMemo(
-    () => schedules.filter((s) => new Date(s.startTime) >= now).sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime()),
-    [now, schedules]
+    () => schedules.filter((schedule) => !schedule.roomSlug || !completedScheduleSlugs.has(schedule.roomSlug)).sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime()),
+    [completedScheduleSlugs, schedules]
   );
   const previousSchedules = useMemo(
-    () => schedules.filter((s) => new Date(s.startTime) < now).sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime()),
-    [now, schedules]
+    () => schedules.filter((schedule) => Boolean(schedule.roomSlug && completedScheduleSlugs.has(schedule.roomSlug))).sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime()),
+    [completedScheduleSlugs, schedules]
   );
   const previousRooms = useMemo(
     () => rooms.filter((r) => !r.isActive).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
@@ -86,6 +95,7 @@ export default function DashboardPage() {
   useEffect(() => {
     fetchSchedules();
     fetchRooms();
+    fetchTakeaways();
   }, []);
 
   // Auto-clear success message
@@ -98,7 +108,7 @@ export default function DashboardPage() {
 
   const fetchSchedules = useCallback(async () => {
     try {
-      const res = await fetch('/api/schedule');
+      const res = await fetch('/api/schedule', { cache: 'no-store' });
       if (!res.ok) throw new Error('Unable to load schedules');
       const data = (await res.json()) as ScheduleItem[];
       setSchedules(data);
@@ -116,6 +126,13 @@ export default function DashboardPage() {
     } catch (error) {
       console.error('room-fetch-error', error);
     }
+  }, []);
+
+  const fetchTakeaways = useCallback(async () => {
+    try {
+      const res = await fetch('/api/takeaways');
+      if (res.ok) setTakeaways(await res.json());
+    } catch (error) { console.error('takeaway-fetch-error', error); }
   }, []);
 
   async function handleCreateMeeting() {
@@ -152,9 +169,15 @@ export default function DashboardPage() {
   }
 
   async function handleJoinSubmit() {
-    const slug = joinSlug.trim();
+    const value = joinSlug.trim();
+    const slug = value.includes('/') ? value.split('/').filter(Boolean).pop() || '' : value;
     if (!slug) {
-      setErrorMessage('Please enter a meeting slug to join.');
+      setErrorMessage('Please paste a meeting link or room code.');
+      return;
+    }
+    const res = await fetch(`/api/room/${encodeURIComponent(slug)}`);
+    if (!res.ok) {
+      setErrorMessage('That meeting link is invalid or no longer available.');
       return;
     }
     setJoinOpen(false);
@@ -199,20 +222,39 @@ export default function DashboardPage() {
     }
   }
 
-  async function handleJoinScheduledMeeting() {
+  async function handleJoinScheduledMeeting(item: ScheduleItem) {
     setIsLoading(true);
     setErrorMessage('');
     try {
-      const res = await fetch('/api/room', { method: 'POST' });
-      if (!res.ok) throw new Error('Unable to create room');
-      const { slug } = await res.json();
-      router.push(`/workspace/${slug}`);
+      if (!item.roomSlug) throw new Error('This scheduled meeting has no room link.');
+      const res = await fetch(`/api/room/${item.roomSlug}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'start' }) });
+      if (!res.ok) throw new Error('Unable to start room');
+      router.push(`/workspace/${item.roomSlug}`);
     } catch (error) {
       console.error('join-scheduled-error', error);
       setErrorMessage('Unable to start meeting. Try again.');
     } finally {
       setIsLoading(false);
     }
+  }
+
+  async function handleOpenPersonalRoom() {
+    setIsLoading(true); setErrorMessage('');
+    try {
+      const res = await fetch('/api/room', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ personal: true }) });
+      if (!res.ok) throw new Error('Unable to open personal room');
+      const { slug } = await res.json();
+      router.push(`/workspace/${slug}`);
+    } catch { setErrorMessage('Unable to open your personal room.'); }
+    finally { setIsLoading(false); }
+  }
+
+  async function handleCopyInvite(roomSlug?: string | null) {
+    if (!roomSlug) return;
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}/workspace/${roomSlug}`);
+      setSuccessMessage('Meeting link copied to your clipboard.');
+    } catch { setErrorMessage('Could not copy the meeting link.'); }
   }
 
   function formatDuration(createdAt: string, endedAt: string | null): string {
@@ -258,7 +300,7 @@ export default function DashboardPage() {
           />
         )}
 
-        {currentTab === 'takeaway' && <TakeawayTab previousSchedules={previousSchedules} />}
+        {currentTab === 'takeaway' && <TakeawayTab takeaways={takeaways} />}
 
         {/* ── UPCOMING TAB ── */}
         {currentTab === 'upcoming' && (
@@ -303,14 +345,17 @@ export default function DashboardPage() {
                         <Clock size={13} />
                         Duration: {item.duration} minutes
                       </div>
-                      <button
-                        onClick={handleJoinScheduledMeeting}
-                        disabled={isLoading}
-                        className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-500 transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center gap-2"
-                      >
-                        <ExternalLink size={14} />
-                        Start Meeting
-                      </button>
+                      <div className="flex gap-2">
+                        <button onClick={() => handleCopyInvite(item.roomSlug)} disabled={!item.roomSlug} className="rounded-xl border border-blue-500/30 px-4 py-2.5 text-sm font-semibold text-blue-300 hover:bg-blue-500/10 disabled:opacity-40 transition cursor-pointer flex items-center gap-2"><Copy size={14} />Copy link</button>
+                        <button
+                          onClick={() => handleJoinScheduledMeeting(item)}
+                          disabled={isLoading}
+                          className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-500 transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center gap-2"
+                        >
+                          <ExternalLink size={14} />
+                          Start Meeting
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))
@@ -453,7 +498,7 @@ export default function DashboardPage() {
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
                 <div className="rounded-2xl bg-slate-950 px-4 py-3 font-mono font-semibold text-white border border-gray-700">{personalRoomSlug}</div>
                 <button
-                  onClick={() => router.push(`/workspace/${personalRoomSlug}`)}
+                onClick={handleOpenPersonalRoom}
                   disabled={isLoading}
                   className="rounded-2xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-500 transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center gap-2"
                 >

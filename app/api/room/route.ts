@@ -2,23 +2,27 @@ import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { db } from '@/lib/db';
 import { randomUUID } from 'crypto';
+import { ensureDatabaseUser } from '@/lib/current-user';
 
 /**
  * POST /api/room — Create a new meeting room
  */
-export async function POST() {
+export async function POST(request: Request) {
   try {
     const { userId } = await auth();
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const dbUser = await db.user.findUnique({ where: { id: userId } });
-    if (!dbUser) {
-      return NextResponse.json(
-        { error: 'User not synced yet. Please try again in a moment.' },
-        { status: 400 }
-      );
+    await ensureDatabaseUser(userId);
+    const body = await request.json().catch(() => ({})) as { personal?: boolean };
+    if (body.personal) {
+      const slug = `personal-${userId.slice(0, 12)}`;
+      const existing = await db.room.findUnique({ where: { slug } });
+      const room = existing
+        ? await db.room.update({ where: { id: existing.id }, data: { isActive: true, endedAt: null } })
+        : await db.room.create({ data: { slug, hostId: userId, isActive: true } });
+      return NextResponse.json({ roomId: room.id, slug: room.slug });
     }
 
     // Generate a unique slug using UUID (collision-proof)

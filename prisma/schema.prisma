@@ -50,5 +50,6 @@ model Schedule {
   duration    Int
   hostId      String
   host        User     @relation(fields: [hostId], references: [id], onDelete: Cascade)
+  roomSlug    String?  @unique
   createdAt   DateTime @default(now())
 }

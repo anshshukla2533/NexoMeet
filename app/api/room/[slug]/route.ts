@@ -45,7 +45,7 @@ export async function GET(_request: Request, { params }: RouteParams) {
 /**
  * PATCH /api/room/[slug] — End a specific room by slug
  */
-export async function PATCH(_request: Request, { params }: RouteParams) {
+export async function PATCH(request: Request, { params }: RouteParams) {
   try {
     const { userId } = await auth();
     if (!userId) {
@@ -53,6 +53,7 @@ export async function PATCH(_request: Request, { params }: RouteParams) {
     }
 
     const { slug } = await params;
+    const body = await request.json().catch(() => ({})) as { action?: 'start' | 'end' };
 
     const room = await db.room.findUnique({ where: { slug } });
     if (!room) {
@@ -65,10 +66,9 @@ export async function PATCH(_request: Request, { params }: RouteParams) {
 
     const updatedRoom = await db.room.update({
       where: { id: room.id },
-      data: {
-        isActive: false,
-        endedAt: new Date(),
-      },
+      data: body.action === 'start'
+        ? { isActive: true, endedAt: null }
+        : { isActive: false, endedAt: new Date() },
     });
 
     return NextResponse.json(updatedRoom);
