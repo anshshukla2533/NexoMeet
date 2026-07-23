@@ -23,7 +23,8 @@ type PeerInfo = {
 
 type MeetingNote = { id: string; content: string; createdAt: string };
 
-const SIGNALING_URL = process.env.NEXT_PUBLIC_SIGNALING_URL || 'ws://localhost:3005';
+const SIGNALING_URL =
+  process.env.NEXT_PUBLIC_WS_URL!;
 
 export default function WorkspaceClient({ slug }: Props) {
   const router = useRouter();
