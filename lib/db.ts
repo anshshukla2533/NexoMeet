@@ -1,5 +1,10 @@
 import { PrismaClient } from "@prisma/client";
 import { PrismaNeon } from "@prisma/adapter-neon";
+import { neonConfig, type WebSocketConstructor } from "@neondatabase/serverless";
+import WebSocket from "ws";
+
+// Neon uses WebSockets for pooled PostgreSQL connections in Node.js runtimes.
+neonConfig.webSocketConstructor = WebSocket as unknown as WebSocketConstructor;
 
 const globalForPrisma = global as unknown as {
   prisma: PrismaClient | undefined;
