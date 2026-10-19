@@ -25,6 +25,32 @@ model Room {
   createdAt   DateTime     @default(now())
   endedAt     DateTime?
   logs        MeetingLog[]
+  transcripts MeetingTranscript[]
+  aiNote      MeetingNote?
+}
+
+model MeetingTranscript {
+  id        String   @id @default(uuid())
+  roomId    String
+  speaker   String
+  text      String   @db.Text
+  timestamp DateTime @default(now())
+  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@index([roomId, timestamp])
+}
+
+model MeetingNote {
+  id          String   @id @default(uuid())
+  roomId      String   @unique
+  summary     String   @db.Text
+  keyPoints   String[]
+  actionItems String[]
+  decisions   String[]
+  fullText    String   @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  room        Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
 }
 
 model MeetingLog {

@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@clerk/nextjs';
 import {
   Mic, MicOff, Video, VideoOff, PhoneOff, Copy, Check,
-  Users, Clock, Wifi, WifiOff, Maximize2, Minimize2, NotebookPen, Send
+  Users, Clock, Wifi, WifiOff, Maximize2, Minimize2, NotebookPen, Captions, RefreshCw
 } from 'lucide-react';
+import { useSpeechTranscription } from '@/hooks/useSpeechTranscription';
 
 type Props = { slug: string };
 
@@ -21,7 +22,8 @@ type PeerInfo = {
   userId?: string;
 };
 
-type MeetingNote = { id: string; content: string; createdAt: string };
+type Transcript = { id: string; speaker: string; text: string; timestamp: string };
+type MeetingSummary = { id: string; summary: string; keyPoints: string[]; actionItems: string[]; decisions: string[]; updatedAt: string };
 
 const SIGNALING_URL =
   process.env.NEXT_PUBLIC_WS_URL!;
@@ -43,22 +45,34 @@ export default function WorkspaceClient({ slug }: Props) {
   const [connected, setConnected] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [fullscreen, setFullscreen] = useState(false);
-  const [notes, setNotes] = useState<MeetingNote[]>([]);
-  const [noteDraft, setNoteDraft] = useState('');
+  const [transcripts, setTranscripts] = useState<Transcript[]>([]);
+  const [meetingSummary, setMeetingSummary] = useState<MeetingSummary | null>(null);
   const [noteError, setNoteError] = useState('');
-  const [savingNote, setSavingNote] = useState(false);
-  const [notesOpen, setNotesOpen] = useState(false);
+  const [summarizing, setSummarizing] = useState(false);
+  const [notesOpen, setNotesOpen] = useState(true);
   const startTimeRef = useRef<number>(Date.now());
+  const summarizedTranscriptCountRef = useRef(0);
+  const speakerName = userId ? `Participant ${userId.slice(-4)}` : 'You';
+  const { isListening, isSupported, toggleTranscription } = useSpeechTranscription(speakerName, slug);
 
   useEffect(() => {
     setRoomUrl(typeof window !== 'undefined' ? window.location.href : '');
   }, []);
 
   useEffect(() => {
-    fetch(`/api/room/${encodeURIComponent(slug)}/notes`)
-      .then((res) => res.ok ? res.json() : [])
-      .then((data) => setNotes(data))
-      .catch(() => setNoteError('Notes are unavailable right now.'));
+    const loadNotes = async () => {
+      try {
+        const [transcriptResponse, summaryResponse] = await Promise.all([
+          fetch(`/api/room/${encodeURIComponent(slug)}/transcript`),
+          fetch(`/api/room/${encodeURIComponent(slug)}/summary`),
+        ]);
+        if (transcriptResponse.ok) setTranscripts(await transcriptResponse.json());
+        if (summaryResponse.ok) setMeetingSummary(await summaryResponse.json());
+      } catch { setNoteError('Automatic notes are unavailable right now.'); }
+    };
+    void loadNotes();
+    const interval = setInterval(loadNotes, 10_000);
+    return () => clearInterval(interval);
   }, [slug]);
 
   // Meeting timer
@@ -279,21 +293,25 @@ export default function WorkspaceClient({ slug }: Props) {
     setTimeout(() => setCopied(false), 2000);
   }
 
-  async function saveNote() {
-    const content = noteDraft.trim();
-    if (!content) return;
-    setSavingNote(true); setNoteError('');
+  async function generateSummary() {
+    setSummarizing(true); setNoteError('');
     try {
-      const res = await fetch(`/api/room/${encodeURIComponent(slug)}/notes`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content }),
-      });
+      const res = await fetch(`/api/room/${encodeURIComponent(slug)}/summary`, { method: 'POST' });
       const note = await res.json();
-      if (!res.ok) throw new Error(note.error || 'Could not save note.');
-      setNotes((current) => [...current, note]);
-      setNoteDraft('');
-    } catch (error) { setNoteError(error instanceof Error ? error.message : 'Could not save note.'); }
-    finally { setSavingNote(false); }
+      if (!res.ok) throw new Error(note.error || 'Could not generate notes.');
+      setMeetingSummary(note);
+    } catch (error) { setNoteError(error instanceof Error ? error.message : 'Could not generate automatic notes.'); }
+    finally { setSummarizing(false); }
   }
+
+  // Regenerate the one room-level summary whenever new speech is persisted.
+  useEffect(() => {
+    if (!transcripts.length || summarizedTranscriptCountRef.current === transcripts.length) return;
+    summarizedTranscriptCountRef.current = transcripts.length;
+    void generateSummary();
+    // generateSummary intentionally reads the current room slug and state.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [transcripts.length]);
 
   async function leaveRoom() {
     // Send leave signal
@@ -439,15 +457,13 @@ export default function WorkspaceClient({ slug }: Props) {
           ))}
 
         </div>
-        {notesOpen && <aside className="hidden xl:flex w-80 shrink-0 h-full rounded-2xl bg-[#202124] border border-white/10 flex-col overflow-hidden shadow-xl">
-          <div className="p-4 border-b border-white/5 flex items-center gap-2"><NotebookPen size={16} className="text-blue-400" /><h2 className="font-semibold text-sm">Meeting notes</h2></div>
-          <div className="p-4 space-y-3 border-b border-white/5">
-            <textarea value={noteDraft} onChange={(e) => setNoteDraft(e.target.value)} placeholder="Capture a decision, action item, or takeaway…" rows={4} className="w-full resize-none rounded-xl bg-black/20 border border-white/10 p-3 text-sm outline-none focus:border-blue-500" />
-            {noteError && <p className="text-xs text-red-400">{noteError}</p>}
-            <button onClick={saveNote} disabled={savingNote || !noteDraft.trim()} className="w-full rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-40 px-3 py-2 text-sm font-semibold flex items-center justify-center gap-2"><Send size={14} />{savingNote ? 'Saving…' : 'Save takeaway'}</button>
-          </div>
-          <div className="flex-1 overflow-y-auto p-4 space-y-3">
-            {notes.length === 0 ? <p className="text-sm text-gray-500">Saved notes will appear in Takeaways after the meeting.</p> : notes.map((note) => <div key={note.id} className="rounded-xl bg-white/5 p-3 text-sm text-gray-300 whitespace-pre-wrap"><p>{note.content}</p><p className="mt-2 text-xs text-gray-500">{new Date(note.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p></div>)}
+        {notesOpen && <aside className="hidden xl:flex w-96 shrink-0 h-full rounded-2xl bg-[#202124] border border-white/10 flex-col overflow-hidden shadow-xl">
+          <div className="p-4 border-b border-white/5 flex items-center justify-between gap-2"><div className="flex items-center gap-2"><NotebookPen size={16} className="text-blue-400" /><h2 className="font-semibold text-sm">Automatic meeting notes</h2></div><button onClick={generateSummary} disabled={summarizing || transcripts.length === 0} title="Refresh summary" className="p-1.5 rounded-lg hover:bg-white/10 disabled:opacity-40"><RefreshCw size={15} className={summarizing ? 'animate-spin text-blue-400' : 'text-gray-300'} /></button></div>
+          <div className="p-4 border-b border-white/5 text-xs text-gray-400 flex items-center gap-2"><Captions size={14} className={isListening ? 'text-red-400' : 'text-gray-500'} />{isListening ? 'Listening and capturing your speech' : isSupported ? 'Start captions to create live notes' : 'Speech recognition is not supported in this browser'}</div>
+          <div className="flex-1 overflow-y-auto p-4 space-y-5 text-sm">
+            {noteError && <p className="rounded-lg bg-red-500/10 p-3 text-xs text-red-300">{noteError}</p>}
+            {meetingSummary ? <><NoteSection title="Summary" items={[meetingSummary.summary]} /><NoteSection title="Key points" items={meetingSummary.keyPoints} /><NoteSection title="Decisions" items={meetingSummary.decisions} /><NoteSection title="Action items" items={meetingSummary.actionItems} /></> : <p className="text-gray-500">Your meeting summary will appear here after transcript is captured and processed.</p>}
+            <div><h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">Live transcript</h3><div className="space-y-2">{transcripts.length ? transcripts.slice(-30).map((item) => <p key={item.id} className="rounded-lg bg-white/5 p-2.5 text-xs text-gray-300"><span className="font-semibold text-blue-300">{item.speaker}: </span>{item.text}</p>) : <p className="text-xs text-gray-500">No speech captured yet.</p>}</div></div>
           </div>
         </aside>}
       </main>
@@ -488,6 +504,10 @@ export default function WorkspaceClient({ slug }: Props) {
           <NotebookPen size={20} />
         </button>
 
+        <button onClick={toggleTranscription} disabled={!isSupported} className={`p-4 rounded-2xl transition-all cursor-pointer disabled:opacity-40 ${isListening ? 'bg-red-500 hover:bg-red-400' : 'bg-[#3c4043] hover:bg-[#4a4f53]'} text-white`} title={isListening ? 'Stop live captions' : 'Start live captions'}>
+          <Captions size={20} />
+        </button>
+
         {/* Leave Room */}
         <button
           onClick={leaveRoom}
@@ -500,6 +520,11 @@ export default function WorkspaceClient({ slug }: Props) {
       </footer>
     </div>
   );
+}
+
+function NoteSection({ title, items }: { title: string; items: string[] }) {
+  if (!items.length) return null;
+  return <section><h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">{title}</h3><ul className="space-y-2">{items.map((item, index) => <li key={`${title}-${index}`} className="rounded-lg bg-white/5 p-2.5 text-gray-200">{item}</li>)}</ul></section>;
 }
 
 function RemoteVideo({ stream, id }: { stream: MediaStream; id: string }) {
