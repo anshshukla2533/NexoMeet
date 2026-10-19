@@ -1,0 +1,1 @@
+postgresql://neondb_owner:npg_XAGDgNPn9Li5@ep-raspy-star-at9t56i3-pooler.c-9.us-east-1.aws.neon.tech/neondb?sslmode=require==>process.env.DATABASE_URL
