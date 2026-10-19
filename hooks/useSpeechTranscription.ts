@@ -15,8 +15,12 @@ type SpeechRecognitionInstance = {
 };
 
 type SpeechRecognitionConstructor = new () => SpeechRecognitionInstance;
-
-export function useSpeechTranscription(speaker: string, roomSlug: string) {
+export function useSpeechTranscription(
+  speaker: string,
+  roomSlug: string,
+  onTranscript?: (text: string) => void,
+  onError?: (message: string) => void,
+) {
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
   const shouldListenRef = useRef(false);
   const [isListening, setIsListening] = useState(false);
@@ -40,11 +44,22 @@ export function useSpeechTranscription(speaker: string, roomSlug: string) {
     recognition.onresult = (event) => {
       const text = event.results[event.resultIndex]?.[0]?.transcript.trim();
       if (!text) return;
-      void fetch(`/api/room/${encodeURIComponent(roomSlug)}/transcript`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ speaker, text }),
-      });
+      onTranscript?.(text);
+      void (async () => {
+        try {
+          const response = await fetch(`/api/room/${encodeURIComponent(roomSlug)}/transcript`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ speaker, text }),
+          });
+          if (!response.ok) {
+            const body = await response.json().catch(() => ({})) as { error?: string };
+            throw new Error(body.error || "Transcript could not be saved.");
+          }
+        } catch (error) {
+          onError?.(error instanceof Error ? error.message : "Transcript could not be saved.");
+        }
+      })();
     };
     recognition.onend = () => {
       if (shouldListenRef.current) {
@@ -54,7 +69,7 @@ export function useSpeechTranscription(speaker: string, roomSlug: string) {
     recognition.onerror = () => setIsListening(false);
     recognitionRef.current = recognition;
     return () => { shouldListenRef.current = false; recognition.stop(); };
-  }, [roomSlug, speaker]);
+  }, [onError, onTranscript, roomSlug, speaker]);
 
   const toggleTranscription = useCallback(() => {
     const recognition = recognitionRef.current;

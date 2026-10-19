@@ -53,7 +53,13 @@ export default function WorkspaceClient({ slug }: Props) {
   const startTimeRef = useRef<number>(Date.now());
   const summarizedTranscriptCountRef = useRef(0);
   const speakerName = userId ? `Participant ${userId.slice(-4)}` : 'You';
-  const { isListening, isSupported, toggleTranscription } = useSpeechTranscription(speakerName, slug);
+  const handleTranscript = useCallback((text: string) => {
+    setTranscripts((current) => [...current, { id: `local-${Date.now()}`, speaker: speakerName, text, timestamp: new Date().toISOString() }]);
+  }, [speakerName]);
+  const handleTranscriptionError = useCallback((message: string) => setNoteError(message), []);
+  const { isListening, isSupported, toggleTranscription } = useSpeechTranscription(
+    speakerName, slug, handleTranscript, handleTranscriptionError,
+  );
 
   useEffect(() => {
     setRoomUrl(typeof window !== 'undefined' ? window.location.href : '');
@@ -297,9 +303,14 @@ export default function WorkspaceClient({ slug }: Props) {
     setSummarizing(true); setNoteError('');
     try {
       const res = await fetch(`/api/room/${encodeURIComponent(slug)}/summary`, { method: 'POST' });
-      const note = await res.json();
-      if (!res.ok) throw new Error(note.error || 'Could not generate notes.');
-      setMeetingSummary(note);
+      const responseText = await res.text();
+      let note: MeetingSummary | { error?: string } = {};
+      try { note = responseText ? JSON.parse(responseText) : {}; } catch { /* non-JSON error response */ }
+      if (!res.ok) {
+        const message = 'error' in note ? note.error : undefined;
+        throw new Error(message || 'Could not generate notes. Check the server terminal for the underlying error.');
+      }
+      setMeetingSummary(note as MeetingSummary);
     } catch (error) { setNoteError(error instanceof Error ? error.message : 'Could not generate automatic notes.'); }
     finally { setSummarizing(false); }
   }
@@ -459,11 +470,10 @@ export default function WorkspaceClient({ slug }: Props) {
         </div>
         {notesOpen && <aside className="hidden xl:flex w-96 shrink-0 h-full rounded-2xl bg-[#202124] border border-white/10 flex-col overflow-hidden shadow-xl">
           <div className="p-4 border-b border-white/5 flex items-center justify-between gap-2"><div className="flex items-center gap-2"><NotebookPen size={16} className="text-blue-400" /><h2 className="font-semibold text-sm">Automatic meeting notes</h2></div><button onClick={generateSummary} disabled={summarizing || transcripts.length === 0} title="Refresh summary" className="p-1.5 rounded-lg hover:bg-white/10 disabled:opacity-40"><RefreshCw size={15} className={summarizing ? 'animate-spin text-blue-400' : 'text-gray-300'} /></button></div>
-          <div className="p-4 border-b border-white/5 text-xs text-gray-400 flex items-center gap-2"><Captions size={14} className={isListening ? 'text-red-400' : 'text-gray-500'} />{isListening ? 'Listening and capturing your speech' : isSupported ? 'Start captions to create live notes' : 'Speech recognition is not supported in this browser'}</div>
+          <div className="p-4 border-b border-white/5 text-xs text-gray-400 flex items-center gap-2"><Captions size={14} className={isListening ? 'text-red-400' : 'text-gray-500'} />{isListening ? 'Listening in the background — your final summary will update automatically.' : isSupported ? 'Start meeting notes to generate a final summary.' : 'Speech recognition is not supported in this browser'}</div>
           <div className="flex-1 overflow-y-auto p-4 space-y-5 text-sm">
             {noteError && <p className="rounded-lg bg-red-500/10 p-3 text-xs text-red-300">{noteError}</p>}
-            {meetingSummary ? <><NoteSection title="Summary" items={[meetingSummary.summary]} /><NoteSection title="Key points" items={meetingSummary.keyPoints} /><NoteSection title="Decisions" items={meetingSummary.decisions} /><NoteSection title="Action items" items={meetingSummary.actionItems} /></> : <p className="text-gray-500">Your meeting summary will appear here after transcript is captured and processed.</p>}
-            <div><h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">Live transcript</h3><div className="space-y-2">{transcripts.length ? transcripts.slice(-30).map((item) => <p key={item.id} className="rounded-lg bg-white/5 p-2.5 text-xs text-gray-300"><span className="font-semibold text-blue-300">{item.speaker}: </span>{item.text}</p>) : <p className="text-xs text-gray-500">No speech captured yet.</p>}</div></div>
+            {meetingSummary ? <><NoteSection title="Summary" items={[meetingSummary.summary]} /><NoteSection title="Key points" items={meetingSummary.keyPoints} /><NoteSection title="Decisions" items={meetingSummary.decisions} /><NoteSection title="Action items" items={meetingSummary.actionItems} /></> : <p className="text-gray-500">Your final meeting summary will appear here after speech has been processed.</p>}
           </div>
         </aside>}
       </main>
@@ -504,7 +514,7 @@ export default function WorkspaceClient({ slug }: Props) {
           <NotebookPen size={20} />
         </button>
 
-        <button onClick={toggleTranscription} disabled={!isSupported} className={`p-4 rounded-2xl transition-all cursor-pointer disabled:opacity-40 ${isListening ? 'bg-red-500 hover:bg-red-400' : 'bg-[#3c4043] hover:bg-[#4a4f53]'} text-white`} title={isListening ? 'Stop live captions' : 'Start live captions'}>
+        <button onClick={toggleTranscription} disabled={!isSupported} className={`p-4 rounded-2xl transition-all cursor-pointer disabled:opacity-40 ${isListening ? 'bg-red-500 hover:bg-red-400' : 'bg-[#3c4043] hover:bg-[#4a4f53]'} text-white`} title={isListening ? 'Stop background meeting notes' : 'Start background meeting notes'}>
           <Captions size={20} />
         </button>
 
